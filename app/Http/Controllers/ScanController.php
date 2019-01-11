@@ -47,7 +47,8 @@ class ScanController extends Controller
                 DB::connection('mongodb')->collection('scan')->insert([
                     '_id'         => $id,
                     'result'      => json_encode($counts->toArray()),
-                    'active_time' => time()
+                    'active_time' => time(),
+                    'type'        => 'dscan'
                 ]);
             } catch (BulkWriteException $bulkWriteException) {
                 return response()->json(['error' => '服务器出现了一点问题，请尝试重新提交一次'])->setStatusCode(500);
