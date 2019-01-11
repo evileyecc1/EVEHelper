@@ -62,12 +62,9 @@ class ScanController extends Controller
 
     public function show(Request $request, $id)
     {
-        if ( !$id) {
-            return response()->setStatusCode(404);
-        }
         $result = DB::connection('mongodb')->collection('scan')->where('_id', '=', $id)->first();
         if ( !$result) {
-            return response()->setStatusCode(404);
+            return response()->json(['message' => '无法找到对应的扫描结果'])->setStatusCode(404);
         }
         $response = $this->generateDScanResult(collect(json_decode($result['result'])));
         DB::connection('mongodb')->collection('scan')->where('_id', '=', $id)->update(['active_time' => time()]);
