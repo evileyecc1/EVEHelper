@@ -11,7 +11,7 @@ class Groups extends Model
 
     protected $primaryKey = 'groupID';
 
-    protected $table = 'invgroups';
+    protected $table = 'invGroups';
 
     public $timestamps = false;
 

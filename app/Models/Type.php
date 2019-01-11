@@ -11,7 +11,7 @@ class Type extends Model
 
     protected $primaryKey = 'typeID';
 
-    protected $table = 'invtypes';
+    protected $table = 'invTypes';
 
     public $timestamps = false;
 

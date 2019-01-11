@@ -11,7 +11,7 @@ class Translations extends Model
 
     protected $primaryKey = null;
 
-    protected $table = 'trntranslations';
+    protected $table = 'trnTranslations';
 
     public $timestamps = false;
 
