@@ -99,11 +99,21 @@ class ScanController extends Controller
         if ( !$result) {
             return response()->json(['message' => '无法找到对应的扫描结果'])->setStatusCode(404);
         }
+
+        if ( !key_exists('type', $result)) {
+            $result['type'] = 'dscan';
+        }
+
         if ($result['type'] == 'dscan') {
-            $response = ['scan_result' => $this->generateDScanResult(collect(json_decode($result['result'])))];
+            $response = ['type'        => $result['type'],
+                         'scan_result' => $this->generateDScanResult(collect(json_decode($result['result'])))
+            ];
         } elseif ($result['type'] == 'fleet_scan') {
             $ship_result = $this->generateDScanResult(collect(json_decode($result['ship_result'])));
-            $response = ['scan_result' => $ship_result, 'system_result' => json_decode($result['system_result'])];
+            $response = ['type'          => $result['type'],
+                         'scan_result'   => $ship_result,
+                         'system_result' => json_decode($result['system_result'])
+            ];
         }
         DB::connection('mongodb')->collection('scan')->where('_id', '=', $id)->update(['active_time' => time()]);
 
