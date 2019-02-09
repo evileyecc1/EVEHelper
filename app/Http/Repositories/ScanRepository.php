@@ -7,7 +7,7 @@ use App\Exceptions\CacheKeyExistsException;
 
 class ScanRepository
 {
-    private $cache_prefix = 'scan_result';
+    private $cache_prefix = 'scan_result:';
 
     private function generateRandomLetters($length)
     {

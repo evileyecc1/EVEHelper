@@ -40,6 +40,11 @@ class ScanController extends Controller
 
     public function show($id)
     {
-        dd($this->scanService->getResultByID($id));
+        $result = $this->scanService->getResultByID($id);
+
+        if($result == false){
+            return response()->json(['message'=>'无法找到此扫描结果'])->setStatusCode(404);
+        }
+        return response()->json($result);
     }
 }

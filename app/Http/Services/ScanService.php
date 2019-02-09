@@ -4,6 +4,8 @@ namespace App\Http\Services;
 
 use App\Http\Repositories\ScanRepository;
 use App\Http\Repositories\TranslationRepository;
+use App\Models\Type;
+use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 
 class ScanService
@@ -59,6 +61,33 @@ class ScanService
                     return [$ids->get($key)->keyID => $item];
                 }
             });
+
+            $result['systems'] = $systems->toArray();
+            $result['ships'] = $id_types->toArray();
+        } elseif ($scan_type == 'local_scan') {
+            $client = new Client(['base_uri' => 'https://esi.evetech.net']);
+            $character_ids = collect();
+            $corporations = collect();
+            $alliances = collect();
+            foreach ($scan_result->chunk(1000) as $chunk) {
+                $response = $client->request('post', '/legacy/universe/ids/', ['body' => $chunk->toJson()]);
+                $content = json_decode($response->getBody()->getContents(), true);
+                foreach ($content['characters'] as $character_info) {
+                    $character_ids->push($character_info['id']);
+                }
+            }
+            foreach ($character_ids->chunk(1000) as $ids) {
+                $response = $client->request('post', '/legacy/characters/affiliation/', ['body' => $ids->toJson()]);
+                $content = json_decode($response->getBody()->getContents());
+                foreach ($content as $item) {
+                    $corporations->put($item->corporation_id, $corporations->get($item->corporation_id, 0) + 1);
+                    if (property_exists($item, 'alliance_id')) {
+                        $alliances->put($item->alliance_id, $alliances->get($item->alliance_id, 0) + 1);
+                    }
+                }
+            }
+            $result['alliances'] = $alliances->toArray();
+            $result['corporations'] = $alliances->toArray();
         }
         $id = $this->scanRepository->create($result);
 
@@ -67,6 +96,45 @@ class ScanService
 
     public function getResultByID($id)
     {
-        return $this->scanRepository->getById($id);
+        $result = $this->scanRepository->getById($id);
+
+        if ($result == false) {
+            return false;
+        }
+
+        if ($result['type'] == 'dscan') {
+            $scan_result = $result['result'];
+            $types = Type::whereIn('typeID', array_keys($scan_result))->with('group')->get()->keyBy('typeID')->filter(function (
+                $item,
+                $key
+            ) {
+                return in_array($item->group->categoryID, [
+                    6,
+                    22,
+                ]);
+            });
+            $groups = collect();
+            $types_result = collect();
+            foreach ($scan_result as $key => $value) {
+                if ($types->has($key)) {
+                    $groupID = $types->get($key)->group->groupID;
+                    $groups->put($groupID, $groups->get($groupID, 0) + $value);
+                    $types_result->put($key, $value);
+                }
+            }
+            $group_translation = $this->translationRepository->getTranslation(TranslationRepository::GROUP, $groups->keys());
+            $type_translation = $this->translationRepository->getTranslation(TranslationRepository::TYPE, $types->keys());
+
+            $response = [];
+            $response ['scan_type'] = $result['type'];
+            $response ['groups'] = $groups->toArray();
+            $response ['types'] = $types_result->toArray();
+            $response ['translation'] = [
+                'group' => $group_translation->toArray(),
+                'type' => $type_translation->toArray(),
+            ];
+        }
+
+        return $response;
     }
 }

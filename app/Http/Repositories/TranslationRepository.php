@@ -20,4 +20,22 @@ class TranslationRepository
 
         return $translation->whereIn('text', $text)->get();
     }
+
+    public function getTranslation($text_type,$id,$language = ['en','zh']){
+        if(!is_array($id))
+            $id = [$id];
+        $translation = Translations::where('tcID','=',$text_type)->whereIn('languageID',$language);
+
+        $result = collect();
+
+        $translations =  $translation->whereIn('keyID',$id)->get();
+
+        foreach ($translations as $item){
+            $temp = $result->get($item->keyID);
+            $temp[$item->languageID] = $item->text;
+            $result->put($item->keyID,$temp);
+        }
+
+        return $result;
+    }
 }
