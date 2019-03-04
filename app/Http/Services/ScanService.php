@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use App\Http\Repositories\ScanRepository;
 use App\Http\Repositories\TranslationRepository;
 use App\Models\Type;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 
@@ -39,6 +40,7 @@ class ScanService
     {
         $result = [];
         $result['type'] = $scan_type;
+        $result['time'] = time();
         if ($scan_type == 'dscan') {
             $counts = collect();
             $scan_result->each(function ($item, $index) use ($counts) {
@@ -49,10 +51,11 @@ class ScanService
         } elseif ($scan_type == 'fleet_scan') {
             $types = collect();
             $systems = collect();
-            $result->each(function ($item, $key) use ($types, $systems) {
+            $scan_result->each(function ($item, $key) use ($types, $systems) {
                 $temp = explode("\t", $item);
                 $types->put($temp[2], $types->get($temp[2], 0) + 1);
-                $systems->put($temp[1], $systems->get($temp[1], 0) + 1);
+                $system_name = str_replace(' (Docked)','',$temp[1]);
+                $systems->put($system_name, $systems->get($system_name, 0) + 1);
             });
             $texts = $types->keys();
             $ids = $this->translationRepository->convertTextToID(TranslationRepository::TYPE, $texts)->keyBy('text');
@@ -104,37 +107,65 @@ class ScanService
 
         if ($result['type'] == 'dscan') {
             $scan_result = $result['result'];
-            $types = Type::whereIn('typeID', array_keys($scan_result))->with('group')->get()->keyBy('typeID')->filter(function (
-                $item,
-                $key
-            ) {
-                return in_array($item->group->categoryID, [
-                    6,
-                    22,
-                ]);
-            });
-            $groups = collect();
-            $types_result = collect();
-            foreach ($scan_result as $key => $value) {
-                if ($types->has($key)) {
-                    $groupID = $types->get($key)->group->groupID;
-                    $groups->put($groupID, $groups->get($groupID, 0) + $value);
-                    $types_result->put($key, $value);
-                }
-            }
-            $group_translation = $this->translationRepository->getTranslation(TranslationRepository::GROUP, $groups->keys());
-            $type_translation = $this->translationRepository->getTranslation(TranslationRepository::TYPE, $types->keys());
+
+            $product = $this->generateTypeAndGroupFromArray($scan_result);
 
             $response = [];
             $response ['scan_type'] = $result['type'];
-            $response ['groups'] = $groups->toArray();
-            $response ['types'] = $types_result->toArray();
+            $response ['groups'] = $product['groups']->toArray();
+            $response ['types'] = $product['types']->toArray();
             $response ['translation'] = [
-                'group' => $group_translation->toArray(),
-                'type' => $type_translation->toArray(),
+                'group' => $product['group_t']->toArray(),
+                'type' => $product['type_t']->toArray(),
             ];
+        } elseif ($result['type'] == 'fleet_scan') {
+            $response = [];
+            $response['scan_type'] = $result['type'];
+            $product = $this->generateTypeAndGroupFromArray($result['ships']);
+            $response ['groups'] = $product['groups']->toArray();
+            $response ['types'] = $product['types']->toArray();
+            $response ['translation'] = [
+                'group' => $product['group_t']->toArray(),
+                'type' => $product['type_t']->toArray(),
+            ];
+            $response['systems'] = $result['systems'];
+        } elseif ($result['type'] == 'local_scan') {
+
         }
 
+        //$response['create_time'] = (new Carbon($result['time']))->toDateTimeString();
+
         return $response;
+    }
+
+    private function generateTypeAndGroupFromArray($array)
+    {
+        $types = Type::whereIn('typeID', array_keys($array))->with('group')->get()->keyBy('typeID')->filter(function (
+            $item,
+            $key
+        ) {
+            return in_array($item->group->categoryID, [
+                6,
+                22,
+            ]);
+        });
+        $groups = collect();
+        $types_result = collect();
+        foreach ($array as $key => $value) {
+            if ($types->has($key)) {
+                $groupID = $types->get($key)->group->groupID;
+                $groups->put($groupID, $groups->get($groupID, 0) + $value);
+                $types_result->put($key, ['id'=>$key,'groupID'=>$groupID,'amount'=>$value]);
+            }
+        }
+        $group_translation = $this->translationRepository->getTranslation(TranslationRepository::GROUP, $groups->keys());
+        $type_translation = $this->translationRepository->getTranslation(TranslationRepository::TYPE, $types->keys());
+
+        return [
+            'types' => $types_result,
+            'groups' => $groups,
+            'group_t' => $group_translation,
+            'type_t' => $type_translation,
+        ];
     }
 }

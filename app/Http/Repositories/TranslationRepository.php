@@ -22,8 +22,9 @@ class TranslationRepository
     }
 
     public function getTranslation($text_type,$id,$language = ['en','zh']){
-        if(!is_array($id))
+        if(!is_iterable($id))
             $id = [$id];
+
         $translation = Translations::where('tcID','=',$text_type)->whereIn('languageID',$language);
 
         $result = collect();
