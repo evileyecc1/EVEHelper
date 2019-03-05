@@ -8,7 +8,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Repositories\EVE\AllianceRepository;
 use App\Http\Services\ScanService;
+use App\Utils\ESIHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -49,4 +51,5 @@ class ScanController extends Controller
         }
         return response()->json($result);
     }
+
 }
