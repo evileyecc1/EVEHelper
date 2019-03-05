@@ -13,5 +13,3 @@
 Route::post('/scan','ScanController@create');
 
 Route::get('/scan/{id}','ScanController@show');
-
-Route::get('/test','ScanController@test');
