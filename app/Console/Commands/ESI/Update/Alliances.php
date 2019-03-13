@@ -3,7 +3,7 @@
 namespace App\Console\Commands\ESI\Update;
 
 use App\Jobs\Alliances\GetAllianceDetail;
-use App\Utils\ESIHelper;
+use ESIHelper\ESIHelper;
 use Illuminate\Console\Command;
 
 class Alliances extends Command
@@ -39,7 +39,7 @@ class Alliances extends Command
      */
     public function handle(ESIHelper $ESIHelper)
     {
-        $alliances = $ESIHelper->execute('get','/v1/alliances');
+        $alliances = $ESIHelper->invoke('get','/v1/alliances');
         $alliances = collect(json_decode($alliances,true));
         $this->info('Get total alliance:'.$alliances->count());
         foreach ($alliances as $alliance_id)
