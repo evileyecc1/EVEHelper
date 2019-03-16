@@ -15,5 +15,5 @@ class Translations extends Model
 
     public $timestamps = false;
 
-    public $rememberFor = 10080;
+    public $rememberFor = 3600 * 24 * 7;
 }

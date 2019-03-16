@@ -26,6 +26,8 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')
         //          ->hourly();
+        $schedule->command('esi:update:alliances')->dailyAt('13:00');
+        $schedule->command('esi:update:corporations')->twiceDaily(1, 15);
     }
 
     /**

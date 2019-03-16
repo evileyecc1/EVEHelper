@@ -39,12 +39,17 @@ class Alliances extends Command
      */
     public function handle(ESIHelper $ESIHelper)
     {
-        $alliances = $ESIHelper->invoke('get','/v1/alliances');
-        $alliances = collect(json_decode($alliances,true));
-        $this->info('Get total alliance:'.$alliances->count());
-        foreach ($alliances as $alliance_id)
-        {
-            GetAllianceDetail::dispatch($alliance_id);
+        $response = $ESIHelper->invoke('get', '/v1/alliances');
+        if ($response->status_code == 200 || $response->status_code == 304) {
+            $alliances = collect(json_decode($response->response_text, true));
+            $this->info('Get total alliance:'.$alliances->count());
+            foreach ($alliances as $alliance_id) {
+                GetAllianceDetail::dispatch($alliance_id);
+            }
+        } else {
+            $this->error('Response error.Error code:'.$response->status_code.PHP_EOL.'Text:'.$response->response_text);
         }
+
+        return;
     }
 }

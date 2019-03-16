@@ -14,7 +14,7 @@ class Alliances extends Model
 
     protected $guarded = [];
 
-    public $rememberFor = 10080;
+    public $rememberFor = 3600 * 24;
 
     public function setDateFoundedAttribute($value)
     {

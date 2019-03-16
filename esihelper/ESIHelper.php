@@ -59,7 +59,7 @@ class ESIHelper
                     $etag = $response->getHeader('etag')[0];
                     $expire_date = new Carbon($response->getHeader('expires')[0]);
                     //$minutes = $expire_date->diffInMinutes(Carbon::now());
-                    $minutes = 60 * 24;
+                    $minutes = 60 * 24 * 60;
                     self::$cache_system->set($etag, $result, $minutes);
                     self::$cache_system->set($url, $etag, $minutes);
                 }

@@ -4,6 +4,9 @@ namespace App\Http\Services;
 
 use App\Http\Repositories\ScanRepository;
 use App\Http\Repositories\TranslationRepository;
+use App\Jobs\Corporation\GetCorporationDetail;
+use App\Models\Alliances;
+use App\Models\Corporations;
 use App\Models\Type;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
@@ -90,7 +93,13 @@ class ScanService
                 }
             }
             $result['alliances'] = $alliances->toArray();
-            $result['corporations'] = $alliances->toArray();
+            $result['corporations'] = $corporations->toArray();
+            $ids = Corporations::all('corporation_id')->keyBy('corporation_id');
+            foreach ($corporations->keys() as $key) {
+                if (! $ids->has($key)) {
+                    GetCorporationDetail::dispatch($key);
+                }
+            }
         }
         $id = $this->scanRepository->create($result);
 
@@ -130,7 +139,17 @@ class ScanService
             ];
             $response['systems'] = $result['systems'];
         } elseif ($result['type'] == 'local_scan') {
-
+            $alliances = Alliances::whereIn('alliance_id', array_keys($result['alliances']))->dontRemember()->get([
+                'alliance_id',
+                'name',
+            ]);
+            $corporations = Corporations::whereIn('corporation_id', array_keys($result['corporations']))->dontRemember()->get([
+                'corporation_id',
+                'name',
+            ]);
+            $response = $result;
+            $response['alliances_detail'] = $alliances;
+            $response['corporations_detail'] = $corporations;
         }
 
         //$response['create_time'] = (new Carbon($result['time']))->toDateTimeString();

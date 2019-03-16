@@ -2,9 +2,8 @@
 
 namespace App\Jobs\Alliances;
 
-use App\Http\Repositories\EVE\AllianceRepository;
-use App\Models\Alliances;
-use Illuminate\Support\Arr;
+use App\Jobs\Corporation\GetCorporationDetail;
+use App\Models\Corporations;
 use ESIHelper\ESIHelper;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -12,13 +11,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-class GetAllianceDetail implements ShouldQueue
+class GetAllianceCorporations implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $alliance_id;
-
-    public $tries = 3;
 
     /**
      * Create a new job instance.
@@ -35,20 +32,19 @@ class GetAllianceDetail implements ShouldQueue
      *
      * @return void
      */
-    public function handle(ESIHelper $ESIHelper, AllianceRepository $allianceRepository)
+    public function handle(ESIHelper $ESIHelper)
     {
-        $response = $ESIHelper->invoke('get', '/v3/alliances/{alliance_id}/', ['alliance_id' => $this->alliance_id]);
+        $alliance_id = $this->alliance_id;
+        $response = $ESIHelper->invoke('get', '/v1/alliances/{alliance_id}/corporations/', ['alliance_id' => $this->alliance_id]);
         if ($response->status_code == 200 || $response->status_code == 304) {
-            $alliance_data = json_decode($response->response_text, true);
-            $alliance_data['alliance_id'] = $this->alliance_id;
-            $alliance = $allianceRepository->getOneByID($this->alliance_id);
-            if ($alliance == null) {
-                $allianceRepository->create($alliance_data);
-            } else {
-                $allianceRepository->update($alliance_data);
+            $alliance_corporations = json_decode($response->response_text, true);
+            $alliance_corps = Corporations::whereAllianceId($alliance_id)->get(['corporation_id']);
+            foreach ($alliance_corporations as $corporation) {
+                if (! $alliance_corps->has($corporation)) {
+                    GetCorporationDetail::dispatch($corporation);
+                }
             }
-        }
-        else{
+        } else {
             \Log::error('Get Alliance Detail error.Response details:'.json_encode($response));
             self::dispatch($this->alliance_id)->delay(now()->addHour(1));
         }
