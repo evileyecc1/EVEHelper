@@ -142,11 +142,11 @@ class ScanService
             $alliances = Alliances::whereIn('alliance_id', array_keys($result['alliances']))->dontRemember()->get([
                 'alliance_id',
                 'name',
-            ]);
+            ])->keyBy('alliance_id');
             $corporations = Corporations::whereIn('corporation_id', array_keys($result['corporations']))->dontRemember()->get([
                 'corporation_id',
                 'name',
-            ]);
+            ])->keyBy('corporation_id');
             $response = $result;
             $response['alliances_detail'] = $alliances;
             $response['corporations_detail'] = $corporations;

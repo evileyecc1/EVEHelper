@@ -28,6 +28,9 @@ class ScanController extends Controller
         $result = $request->input('scan');
         $result = str_replace("\r\n","\n",$result);
         $result = str_replace("\r","\n",$result);
+        if ($result == '') {
+            return response()->json(['请不要提交空的结果'])->setStatusCode(422);
+        }
         $result = new Collection(explode(PHP_EOL, $result));
         if (is_null($result)) {
             return response()->json(['message' => '提交的内容不能为空'])->setStatusCode(422);
