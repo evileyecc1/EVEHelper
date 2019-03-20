@@ -137,6 +137,13 @@ class ScanService
                 'group' => $product['group_t']->toArray(),
                 'type' => $product['type_t']->toArray(),
             ];
+            uasort($result['systems'], function ($a, $b) {
+                if ($a == $b) {
+                    return 0;
+                }
+
+                return ($a > $b) ? -1 : 1;
+            });
             $response['systems'] = $result['systems'];
         } elseif ($result['type'] == 'local_scan') {
             $alliances = Alliances::whereIn('alliance_id', array_keys($result['alliances']))->dontRemember()->get([
