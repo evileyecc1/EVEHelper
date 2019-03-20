@@ -14,7 +14,7 @@ class TranslationRepository
     {
         $translation = Translations::where('tcID', '=', $text_type);
 
-        if (! is_array($text)) {
+        if (! is_iterable($text)) {
             return $translation->where('text', $text)->get();
         }
 

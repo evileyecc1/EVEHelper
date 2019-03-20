@@ -47,6 +47,7 @@ class GetAllianceDetail implements ShouldQueue
             } else {
                 $allianceRepository->update($alliance_data);
             }
+            GetAllianceCorporations::dispatch($this->alliance_id);
         }
         else{
             \Log::error('Get Alliance Detail error.Response details:'.json_encode($response));
