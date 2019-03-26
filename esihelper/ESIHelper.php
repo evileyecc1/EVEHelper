@@ -25,7 +25,7 @@ class ESIHelper
         }
     }
 
-    public function invoke($method, $url, $params = [], $query = [], $body = '')
+    public function invoke($method, $url, $params = [], $query = [], $body = '', $use_cache = true)
     {
         //todo: replace these fucking code in someday
         $method = strtolower($method);
@@ -60,8 +60,10 @@ class ESIHelper
                     $expire_date = new Carbon($response->getHeader('expires')[0]);
                     //$minutes = $expire_date->diffInMinutes(Carbon::now());
                     $minutes = 60 * 24 * 60;
-                    self::$cache_system->set($etag, $result, $minutes);
-                    self::$cache_system->set($url, $etag, $minutes);
+                    if ($use_cache) {
+                        self::$cache_system->set($etag, $result, $minutes);
+                        self::$cache_system->set($url, $etag, $minutes);
+                    }
                 }
 
                 $esi_response = new ESIResponse($response->getStatusCode(), false, $result, $response->getHeaders());
