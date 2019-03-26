@@ -27,6 +27,6 @@ class AllianceRepository
 
     public function update($alliance_data)
     {
-        Alliances::updateOrInsert(['alliance_id' => $alliance_data['alliance_id']], Arr::except($alliance_data, 'alliance_id'));
+        Alliances::insertOnDuplicateKey([$alliance_data]);
     }
 }

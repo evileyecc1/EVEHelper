@@ -5,10 +5,11 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Watson\Rememberable\Rememberable;
+use Yadakhov\InsertOnDuplicateKey;
 
 class Corporations extends Model
 {
-    use Rememberable;
+    use Rememberable, InsertOnDuplicateKey;
 
     protected $primaryKey = 'corporation_id';
 

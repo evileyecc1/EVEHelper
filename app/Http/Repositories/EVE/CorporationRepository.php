@@ -29,9 +29,6 @@ class CorporationRepository
 
     public function update($corporation_data)
     {
-        Corporations::updateOrInsert([
-            'corporation_id' => $corporation_data['corporation_id'],
-            Arr::except($corporation_data, 'corporation_id'),
-        ]);
+        Corporations::insertOnDuplicateKey([$corporation_data]);
     }
 }
