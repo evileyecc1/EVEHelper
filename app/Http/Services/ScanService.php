@@ -9,6 +9,7 @@ use App\Models\Alliances;
 use App\Models\Corporations;
 use App\Models\Type;
 use Carbon\Carbon;
+use ESIHelper\ESIHelper;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 
@@ -18,10 +19,17 @@ class ScanService
 
     private $translationRepository;
 
-    public function __construct(ScanRepository $scanRepository, TranslationRepository $translationRepository)
+    private $ESIHelper;
+
+    public function __construct(
+        ScanRepository $scanRepository,
+        TranslationRepository $translationRepository,
+        ESIHelper $ESIHelper
+    )
     {
         $this->scanRepository = $scanRepository;
         $this->translationRepository = $translationRepository;
+        $this->ESIHelper = $ESIHelper;
     }
 
     public function getScanType(Collection $scan_result)
@@ -155,6 +163,28 @@ class ScanService
                 'name',
             ])->keyBy('corporation_id');
             $response = $result;
+            $undefined_ids = array_diff(array_keys($result['corporations']), $corporations->keys()->toArray());
+            $undefined_ids = array_merge($undefined_ids, array_diff(array_keys($result['alliances']), $alliances->keys()->toArray()));
+
+            if (count($undefined_ids) > 0) {
+                $esi_response = $this->ESIHelper->invoke('post', '/v3/universe/names/', [], [], json_encode($undefined_ids));
+                if ($esi_response->status_code == 200) {
+                    $esi_result = json_decode($esi_response->response_text);
+                    foreach ($esi_result as $item) {
+                        $temp = new \stdClass();
+                        if ($item->category == 'alliance') {
+                            $temp->alliance_id = $item->id;
+                            $temp->name = $item->name;
+                            $alliances->put($item->id, $temp);
+                        } elseif ($item->category == 'corporation') {
+                            $temp->corporation_id = $item->id;
+                            $temp->name = $item->name;
+                            $corporations->put($item->id, $temp);
+                        }
+                    }
+                }
+            }
+
             $response['alliances_detail'] = $alliances;
             $response['corporations_detail'] = $corporations;
         }
